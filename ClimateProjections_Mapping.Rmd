@@ -1,4 +1,4 @@
-# Mapping Met Office Climate Projections
+# Mapping UKCP18 Climate Projections
 
 ## Install libraries
 
