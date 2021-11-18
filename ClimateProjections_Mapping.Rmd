@@ -1,0 +1,2244 @@
+# Mapping Met Office Climate Projections
+
+# Set the Working Directory
+
+```{r}
+setwd("C:/Users/chrobin/OneDrive - The University of Liverpool/Projects/AmbientVulnerabilities/ClimateProjections/MetOfficeMaps")
+getwd()
+```
+
+```{r}
+# Install packages for opening a netCDF file
+install.packages(c("sf", "tmap", "dplyr", "spdep", "units", "RColorBrewer", "raster", "rgdal", "PCICt", "ncdf4"), depend = TRUE)
+install.packages("magick")
+
+library(sf)
+library(dplyr)
+library(tmap)
+library(raster)
+library(rgdal)
+library(PCICt)
+library(ncdf4)
+library(RColorBrewer)
+library(tmaptools)
+library(magick)
+library(gridExtra)
+```
+# Set correct coordinate system
+```{r}
+ukgrid = "+init=epsg:27700"
+```
+
+# Read shapefile of the UK
+```{r}
+UK <- readOGR("Countries_(December_2020)_UK_BGC.shp")
+plot(UK,
+     axes=TRUE)
+```
+
+# Full example of 1981
+
+##  Import the .nc file that the Met Office provides
+
+```{r}
+netcdf_data_81 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_198012-198111.nc")
+```
+
+##  Rotate the pole coordinate of the data
+
+Based on [this fantastic blog](https://luciazwatts.wordpress.com/2020/07/27/how-to-using-met-office-ukcp18-2-2km-climate-projections/) by Lucia Watts at Bangor University. Write the .nc file as a .tif file format instead. 
+
+```{r}
+# Briefly explore the .nc data
+# Import the .nc data
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198012-198111.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198012-198111_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+```
+## Generate map for 1981
+
+```{r}
+# Process raster data
+band8_81 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_198012-198111_rotated.tif"), band = 8) # Retrieve band 8 for data from 1980
+plot(band8_81)
+```
+```{r}
+proj4string(band8_81) <- CRS(ukgrid) # Set or retrieve the projection 
+band8_81_c <- crop(band8_81, UK) # crop the raster image to the UK coastline
+band8_81_c_r <- rasterize(UK, band8_81_c) # Transfer values associated with UK object to raster cells
+band8_81_final <- mask(x=band8_81_c, mask=band8_81_c_r) # Create a new raster object that has the same values as the original, but excluding any NA values
+```
+
+```{r}
+# Map raster data 
+tm_band8_81 <- tm_shape(band8_81_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1981", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_81, "1981_July.png") # Save map as png.
+```
+
+# 1982
+
+```{r}
+netcdf_data_82 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_198112-198211.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198112-198211.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198112-198211_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_82 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_198112-198211_rotated.tif"), band = 8) 
+proj4string(band8_82) <- CRS(ukgrid) 
+band8_82_c <- crop(band8_82, UK) 
+band8_82_c_r <- rasterize(UK, band8_82_c) 
+band8_82_final <- mask(x=band8_82_c, mask=band8_82_c_r) 
+
+tm_band8_82 <- tm_shape(band8_82_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1982", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_82, "1982_July.png") # Save map as png.
+```
+
+# 1983
+
+```{r}
+netcdf_data_83 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_198212-198311.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198212-198311.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198212-198311_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_83 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_198212-198311_rotated.tif"), band = 8) 
+proj4string(band8_83) <- CRS(ukgrid) 
+band8_83_c <- crop(band8_83, UK) 
+band8_83_c_r <- rasterize(UK, band8_83_c) 
+band8_83_final <- mask(x=band8_83_c, mask=band8_83_c_r) 
+
+tm_band8_83 <- tm_shape(band8_83_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1983", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_83, "1983_July.png") # Save map as png.
+```
+
+# 1984
+
+```{r}
+netcdf_data_84 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_198312-198411.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198312-198411.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198312-198411_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_84 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_198312-198411_rotated.tif"), band = 8) 
+proj4string(band8_84) <- CRS(ukgrid) 
+band8_84_c <- crop(band8_84, UK) 
+band8_84_c_r <- rasterize(UK, band8_84_c) 
+band8_84_final <- mask(x=band8_84_c, mask=band8_84_c_r) 
+
+tm_band8_84 <- tm_shape(band8_84_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1984", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_84, "1984_July.png") # Save map as png.
+```
+
+# 1985
+
+```{r}
+netcdf_data_85 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_198412-198511.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198412-198511.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198412-198511_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_85 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_198412-198511_rotated.tif"), band = 8) 
+proj4string(band8_85) <- CRS(ukgrid) 
+band8_85_c <- crop(band8_85, UK) 
+band8_85_c_r <- rasterize(UK, band8_85_c) 
+band8_85_final <- mask(x=band8_85_c, mask=band8_85_c_r) 
+
+tm_band8_85 <- tm_shape(band8_85_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1985", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_85, "1985_July.png") # Save map as png.
+```
+
+# 1986
+
+```{r}
+netcdf_data_86 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_198512-198611.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198512-198611.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198512-198611_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_86 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_198512-198611_rotated.tif"), band = 8) 
+proj4string(band8_86) <- CRS(ukgrid) 
+band8_86_c <- crop(band8_86, UK) 
+band8_86_c_r <- rasterize(UK, band8_86_c) 
+band8_86_final <- mask(x=band8_86_c, mask=band8_86_c_r) 
+
+tm_band8_86 <- tm_shape(band8_86_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1986", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_86, "1986_July.png") # Save map as png.
+```
+
+# 1987
+
+```{r}
+netcdf_data_87 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_198612-198711.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198612-198711.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198612-198711_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_87 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_198612-198711_rotated.tif"), band = 8) 
+proj4string(band8_87) <- CRS(ukgrid) 
+band8_87_c <- crop(band8_87, UK) 
+band8_87_c_r <- rasterize(UK, band8_87_c) 
+band8_87_final <- mask(x=band8_87_c, mask=band8_87_c_r) 
+
+tm_band8_87 <- tm_shape(band8_87_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1987", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_87, "1987_July.png") # Save map as png.
+```
+
+# 1988
+
+```{r}
+netcdf_data_88 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_198712-198811.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198712-198811.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198712-198811_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_88 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_198712-198811_rotated.tif"), band = 8) 
+proj4string(band8_88) <- CRS(ukgrid) 
+band8_88_c <- crop(band8_88, UK) 
+band8_88_c_r <- rasterize(UK, band8_88_c) 
+band8_88_final <- mask(x=band8_88_c, mask=band8_88_c_r) 
+
+tm_band8_88 <- tm_shape(band8_88_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1988", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_88, "1988_July.png") # Save map as png.
+```
+
+# 1989
+
+```{r}
+netcdf_data_89 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_198812-198911.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198812-198911.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198812-198911_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_89 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_198812-198911_rotated.tif"), band = 8) 
+proj4string(band8_89) <- CRS(ukgrid) 
+band8_89_c <- crop(band8_89, UK) 
+band8_89_c_r <- rasterize(UK, band8_89_c) 
+band8_89_final <- mask(x=band8_89_c, mask=band8_89_c_r) 
+
+tm_band8_89 <- tm_shape(band8_89_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1989", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_89, "1989_July.png") # Save map as png.
+```
+
+# 1990
+
+```{r}
+netcdf_data_90 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_198912-199011.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198912-199011.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_198912-199011_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_90 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_198912-199011_rotated.tif"), band = 8) 
+proj4string(band8_90) <- CRS(ukgrid) 
+band8_90_c <- crop(band8_90, UK) 
+band8_90_c_r <- rasterize(UK, band8_90_c) 
+band8_90_final <- mask(x=band8_90_c, mask=band8_90_c_r) 
+
+tm_band8_90 <- tm_shape(band8_90_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1990", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_90, "1990_July.png") # Save map as png.
+```
+
+# 1991
+
+```{r}
+netcdf_data_91 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_199012-199111.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199012-199111.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199012-199111_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_91 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_199012-199111_rotated.tif"), band = 8) 
+proj4string(band8_91) <- CRS(ukgrid) 
+band8_91_c <- crop(band8_91, UK) 
+band8_91_c_r <- rasterize(UK, band8_91_c) 
+band8_91_final <- mask(x=band8_91_c, mask=band8_91_c_r) 
+
+tm_band8_91 <- tm_shape(band8_91_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1991", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_91, "1991_July.png") # Save map as png.
+```
+
+# 1992
+
+```{r}
+netcdf_data_92 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_199112-199211.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199112-199211.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199112-199211_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_92 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_199112-199211_rotated.tif"), band = 8) 
+proj4string(band8_92) <- CRS(ukgrid) 
+band8_92_c <- crop(band8_92, UK) 
+band8_92_c_r <- rasterize(UK, band8_92_c) 
+band8_92_final <- mask(x=band8_92_c, mask=band8_92_c_r) 
+
+tm_band8_92 <- tm_shape(band8_92_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1992", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_92, "1992_July.png") # Save map as png.
+```
+
+# 1993
+
+```{r}
+netcdf_data_93 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_199212-199311.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199212-199311.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199212-199311_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_93 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_199212-199311_rotated.tif"), band = 8) 
+proj4string(band8_93) <- CRS(ukgrid) 
+band8_93_c <- crop(band8_93, UK) 
+band8_93_c_r <- rasterize(UK, band8_93_c) 
+band8_93_final <- mask(x=band8_93_c, mask=band8_93_c_r) 
+
+tm_band8_93 <- tm_shape(band8_93_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1993", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_93, "1993_July.png") # Save map as png.
+```
+
+
+# 1994
+
+```{r}
+netcdf_data_94 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_199312-199411.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199312-199411.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199312-199411_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_94 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_199312-199411_rotated.tif"), band = 8) 
+proj4string(band8_94) <- CRS(ukgrid) 
+band8_94_c <- crop(band8_94, UK) 
+band8_94_c_r <- rasterize(UK, band8_94_c) 
+band8_94_final <- mask(x=band8_94_c, mask=band8_94_c_r) 
+
+tm_band8_94 <- tm_shape(band8_94_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1994", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)
+
+tmap_save(tm_band8_94, "1994_July.png") # Save map as png.
+```
+
+# 1995
+
+```{r}
+netcdf_data_95 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_199412-199511.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199412-199511.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199412-199511_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_95 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_199412-199511_rotated.tif"), band = 8) 
+proj4string(band8_95) <- CRS(ukgrid) 
+band8_95_c <- crop(band8_95, UK) 
+band8_95_c_r <- rasterize(UK, band8_95_c) 
+band8_95_final <- mask(x=band8_95_c, mask=band8_95_c_r) 
+
+tm_band8_95 <- tm_shape(band8_95_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1995", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_95, "1995_July.png") # Save map as png.
+```
+
+# 1996
+
+```{r}
+netcdf_data_96 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_199512-199611.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199512-199611.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199512-199611_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_96 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_199512-199611_rotated.tif"), band = 8) 
+proj4string(band8_96) <- CRS(ukgrid) 
+band8_96_c <- crop(band8_96, UK) 
+band8_96_c_r <- rasterize(UK, band8_96_c) 
+band8_96_final <- mask(x=band8_96_c, mask=band8_96_c_r) 
+
+tm_band8_96 <- tm_shape(band8_96_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1996", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_96, "1996_July.png") # Save map as png.
+```
+
+# 1997
+
+```{r}
+netcdf_data_97 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_199612-199711.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199612-199711.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199612-199711_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_97 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_199612-199711_rotated.tif"), band = 8) 
+proj4string(band8_97) <- CRS(ukgrid) 
+band8_97_c <- crop(band8_97, UK) 
+band8_97_c_r <- rasterize(UK, band8_97_c) 
+band8_97_final <- mask(x=band8_97_c, mask=band8_97_c_r) 
+
+tm_band8_97 <- tm_shape(band8_97_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1997", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_97, "1997_July.png") # Save map as png.
+```
+
+# 1998
+
+```{r}
+netcdf_data_98 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_199712-199811.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199712-199811.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199712-199811_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_98 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_199712-199811_rotated.tif"), band = 8) 
+proj4string(band8_98) <- CRS(ukgrid) 
+band8_98_c <- crop(band8_98, UK) 
+band8_98_c_r <- rasterize(UK, band8_98_c) 
+band8_98_final <- mask(x=band8_98_c, mask=band8_98_c_r) 
+
+tm_band8_98 <- tm_shape(band8_98_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1998", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_98, "1998_July.png") # Save map as png.
+```
+
+# 1999
+
+```{r}
+netcdf_data_99 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_199812-199911.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199812-199911.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199812-199911_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_99 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_199812-199911_rotated.tif"), band = 8) 
+proj4string(band8_99) <- CRS(ukgrid) 
+band8_99_c <- crop(band8_98, UK) 
+band8_99_c_r <- rasterize(UK, band8_99_c) 
+band8_99_final <- mask(x=band8_99_c, mask=band8_99_c_r) 
+
+tm_band8_99 <- tm_shape(band8_99_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "1999", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_99, "1999_July.png") # Save map as png.
+```
+
+# 2000
+
+```{r}
+netcdf_data_00 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_199912-200011.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199912-200011.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_199912-200011_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_00 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_199912-200011_rotated.tif"), band = 8) 
+proj4string(band8_00) <- CRS(ukgrid) 
+band8_00_c <- crop(band8_00, UK) 
+band8_00_c_r <- rasterize(UK, band8_00_c) 
+band8_00_final <- mask(x=band8_00_c, mask=band8_00_c_r) 
+
+tm_band8_00 <- tm_shape(band8_00_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2000", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_00, "2000_July.png") # Save map as png.
+```
+
+# 2021
+
+```{r}
+netcdf_data_21 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_202012-202111.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202012-202111.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202012-202111_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_21 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_202012-202111_rotated.tif"), band = 8) 
+proj4string(band8_21) <- CRS(ukgrid) 
+band8_21_c <- crop(band8_21, UK) 
+band8_21_c_r <- rasterize(UK, band8_21_c) 
+band8_21_final <- mask(x=band8_21_c, mask=band8_21_c_r) 
+
+tm_band8_21 <- tm_shape(band8_21_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2021", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_21, "2021_July.png") # Save map as png.
+```
+
+# 2022
+
+```{r}
+netcdf_data_22 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_202112-202211.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202112-202211.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202112-202211_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_22 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_202112-202211_rotated.tif"), band = 8) 
+proj4string(band8_22) <- CRS(ukgrid) 
+band8_22_c <- crop(band8_22, UK) 
+band8_22_c_r <- rasterize(UK, band8_22_c) 
+band8_22_final <- mask(x=band8_22_c, mask=band8_22_c_r) 
+
+tm_band8_22 <- tm_shape(band8_22_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2022", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_22, "2022_July.png") # Save map as png.
+```
+
+# 2023
+
+```{r}
+netcdf_data_23 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_202212-202311.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202212-202311.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202212-202311_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_23 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_202212-202311_rotated.tif"), band = 8) 
+proj4string(band8_23) <- CRS(ukgrid) 
+band8_23_c <- crop(band8_23, UK) 
+band8_23_c_r <- rasterize(UK, band8_23_c) 
+band8_23_final <- mask(x=band8_23_c, mask=band8_23_c_r) 
+
+tm_band8_23 <- tm_shape(band8_23_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2023", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_23, "2023_July.png") # Save map as png.
+```
+
+# 2024
+
+```{r}
+netcdf_data_24 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_202312-202411.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202312-202411.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202312-202411_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_24 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_202312-202411_rotated.tif"), band = 8) 
+proj4string(band8_24) <- CRS(ukgrid) 
+band8_24_c <- crop(band8_24, UK) 
+band8_24_c_r <- rasterize(UK, band8_24_c) 
+band8_24_final <- mask(x=band8_24_c, mask=band8_24_c_r) 
+
+tm_band8_24 <- tm_shape(band8_24_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2024", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_24, "2024_July.png") # Save map as png.
+```
+
+# 2025
+
+```{r}
+netcdf_data_25 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_202412-202511.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202412-202511.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202412-202511_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_25 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_202412-202511_rotated.tif"), band = 8) 
+proj4string(band8_25) <- CRS(ukgrid) 
+band8_25_c <- crop(band8_25, UK) 
+band8_25_c_r <- rasterize(UK, band8_25_c) 
+band8_25_final <- mask(x=band8_25_c, mask=band8_25_c_r) 
+
+tm_band8_25 <- tm_shape(band8_25_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2025", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_25, "2025_July.png") # Save map as png.
+```
+
+# 2026
+
+```{r}
+netcdf_data_26 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_202512-202611.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202512-202611.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202512-202611_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_26 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_202512-202611_rotated.tif"), band = 8) 
+proj4string(band8_26) <- CRS(ukgrid) 
+band8_26_c <- crop(band8_26, UK) 
+band8_26_c_r <- rasterize(UK, band8_26_c) 
+band8_26_final <- mask(x=band8_26_c, mask=band8_26_c_r) 
+
+tm_band8_26 <- tm_shape(band8_26_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2026", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_26, "2026_July.png") # Save map as png.
+```
+
+# 2027
+
+```{r}
+netcdf_data_27 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_202612-202711.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202612-202711.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202612-202711_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_27 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_202612-202711_rotated.tif"), band = 8) 
+proj4string(band8_27) <- CRS(ukgrid) 
+band8_27_c <- crop(band8_27, UK) 
+band8_27_c_r <- rasterize(UK, band8_27_c) 
+band8_27_final <- mask(x=band8_27_c, mask=band8_27_c_r) 
+
+tm_band8_27 <- tm_shape(band8_27_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2027", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_27, "2027_July.png") # Save map as png.
+```
+
+# 2028
+
+```{r}
+netcdf_data_28 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_202712-202811.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202712-202811.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202712-202811_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_28 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_202712-202811_rotated.tif"), band = 8) 
+proj4string(band8_28) <- CRS(ukgrid) 
+band8_28_c <- crop(band8_28, UK) 
+band8_28_c_r <- rasterize(UK, band8_28_c) 
+band8_28_final <- mask(x=band8_28_c, mask=band8_28_c_r) 
+
+tm_band8_28 <- tm_shape(band8_28_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2028", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_28, "2028_July.png") # Save map as png.
+```
+
+# 2029
+
+```{r}
+netcdf_data_29 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_202812-202911.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202812-202911.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202812-202911_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_29 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_202812-202911_rotated.tif"), band = 8) 
+proj4string(band8_29) <- CRS(ukgrid) 
+band8_29_c <- crop(band8_29, UK) 
+band8_29_c_r <- rasterize(UK, band8_29_c) 
+band8_29_final <- mask(x=band8_29_c, mask=band8_29_c_r) 
+
+tm_band8_29 <- tm_shape(band8_29_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2029", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_29, "2029_July.png") # Save map as png.
+```
+
+# 2030
+
+```{r}
+netcdf_data_30 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_202912-203011.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202912-203011.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_202912-203011_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_30 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_202912-203011_rotated.tif"), band = 8) 
+proj4string(band8_30) <- CRS(ukgrid) 
+band8_30_c <- crop(band8_30, UK) 
+band8_30_c_r <- rasterize(UK, band8_30_c) 
+band8_30_final <- mask(x=band8_30_c, mask=band8_30_c_r) 
+
+tm_band8_30 <- tm_shape(band8_30_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2030", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_30, "2030_July.png") # Save map as png.
+```
+
+# 2031
+
+```{r}
+netcdf_data_31 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_203012-203111.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203012-203111.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203012-203111_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_31 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_203012-203111_rotated.tif"), band = 8) 
+proj4string(band8_31) <- CRS(ukgrid) 
+band8_31_c <- crop(band8_31, UK) 
+band8_31_c_r <- rasterize(UK, band8_31_c) 
+band8_31_final <- mask(x=band8_31_c, mask=band8_31_c_r) 
+
+tm_band8_31 <- tm_shape(band8_31_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2031", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_31, "2031_July.png") # Save map as png.
+```
+
+# 2032
+
+```{r}
+netcdf_data_32 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_203112-203211.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203112-203211.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203112-203211_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_32 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_203112-203211_rotated.tif"), band = 8) 
+proj4string(band8_32) <- CRS(ukgrid) 
+band8_32_c <- crop(band8_32, UK) 
+band8_32_c_r <- rasterize(UK, band8_32_c) 
+band8_32_final <- mask(x=band8_32_c, mask=band8_32_c_r) 
+
+tm_band8_32 <- tm_shape(band8_32_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2032", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_32, "2032_July.png") # Save map as png.
+```
+
+# 2033
+
+```{r}
+netcdf_data_33 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_203212-203311.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203212-203311.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203212-203311_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_33 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_203212-203311_rotated.tif"), band = 8) 
+proj4string(band8_33) <- CRS(ukgrid) 
+band8_33_c <- crop(band8_33, UK) 
+band8_33_c_r <- rasterize(UK, band8_33_c) 
+band8_33_final <- mask(x=band8_33_c, mask=band8_33_c_r) 
+
+tm_band8_33 <- tm_shape(band8_33_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2033", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_33, "2033_July.png") # Save map as png.
+```
+
+# 2034
+
+```{r}
+netcdf_data_34 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_203312-203411.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203312-203411.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203312-203411_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_34 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_203312-203411_rotated.tif"), band = 8) 
+proj4string(band8_34) <- CRS(ukgrid) 
+band8_34_c <- crop(band8_34, UK) 
+band8_34_c_r <- rasterize(UK, band8_34_c) 
+band8_34_final <- mask(x=band8_34_c, mask=band8_34_c_r) 
+
+tm_band8_34 <- tm_shape(band8_34_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2034", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_34, "2034_July.png") # Save map as png.
+```
+
+# 2035
+
+```{r}
+netcdf_data_35 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_203412-203511.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203412-203511.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203412-203511_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_35 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_203412-203511_rotated.tif"), band = 8) 
+proj4string(band8_35) <- CRS(ukgrid) 
+band8_35_c <- crop(band8_35, UK) 
+band8_35_c_r <- rasterize(UK, band8_35_c) 
+band8_35_final <- mask(x=band8_35_c, mask=band8_35_c_r) 
+
+tm_band8_35 <- tm_shape(band8_35_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2035", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_35, "2035_July.png") # Save map as png.
+```
+
+# 2036
+
+```{r}
+netcdf_data_36 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_203512-203611.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203512-203611.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203512-203611_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_36 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_203512-203611_rotated.tif"), band = 8) 
+proj4string(band8_36) <- CRS(ukgrid) 
+band8_36_c <- crop(band8_36, UK) 
+band8_36_c_r <- rasterize(UK, band8_36_c) 
+band8_36_final <- mask(x=band8_36_c, mask=band8_36_c_r) 
+
+tm_band8_36 <- tm_shape(band8_36_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2036", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_36, "2036_July.png") # Save map as png.
+```
+
+# 2037
+
+```{r}
+netcdf_data_37 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_203612-203711.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203612-203711.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203612-203711_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_37 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_203612-203711_rotated.tif"), band = 8) 
+proj4string(band8_37) <- CRS(ukgrid) 
+band8_37_c <- crop(band8_37, UK) 
+band8_37_c_r <- rasterize(UK, band8_37_c) 
+band8_37_final <- mask(x=band8_37_c, mask=band8_37_c_r) 
+
+tm_band8_37 <- tm_shape(band8_37_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2037", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_37, "2037_July.png") # Save map as png.
+```
+
+# 2038
+
+```{r}
+netcdf_data_38 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_203712-203811.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203712-203811.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203712-203811_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_38 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_203712-203811_rotated.tif"), band = 8) 
+proj4string(band8_38) <- CRS(ukgrid) 
+band8_38_c <- crop(band8_38, UK) 
+band8_38_c_r <- rasterize(UK, band8_38_c) 
+band8_38_final <- mask(x=band8_38_c, mask=band8_38_c_r) 
+
+tm_band8_38 <- tm_shape(band8_38_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2038", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_38, "2038_July.png") # Save map as png.
+```
+
+# 2039
+
+```{r}
+netcdf_data_38 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_203812-203911.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203812-203911.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203812-203911_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_39 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_203812-203911_rotated.tif"), band = 8) 
+proj4string(band8_39) <- CRS(ukgrid) 
+band8_39_c <- crop(band8_39, UK) 
+band8_39_c_r <- rasterize(UK, band8_39_c) 
+band8_39_final <- mask(x=band8_39_c, mask=band8_39_c_r) 
+
+tm_band8_39 <- tm_shape(band8_39_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2039", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_39, "2039_July.png") # Save map as png.
+```
+
+# 2040
+
+```{r}
+netcdf_data_39 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_203912-204011.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203912-204011.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_203912-204011_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_40 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_203912-204011_rotated.tif"), band = 8) 
+proj4string(band8_40) <- CRS(ukgrid) 
+band8_40_c <- crop(band8_40, UK) 
+band8_40_c_r <- rasterize(UK, band8_40_c) 
+band8_40_final <- mask(x=band8_40_c, mask=band8_40_c_r) 
+
+tm_band8_40 <- tm_shape(band8_40_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2040", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_40, "2040_July.png") # Save map as png.
+```
+
+# 2061
+
+```{r}
+netcdf_data_61 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_206012-206111.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206012-206111.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206012-206111_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_61 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_206012-206111_rotated.tif"), band = 8) 
+proj4string(band8_61) <- CRS(ukgrid) 
+band8_61_c <- crop(band8_61, UK) 
+band8_61_c_r <- rasterize(UK, band8_61_c) 
+band8_61_final <- mask(x=band8_61_c, mask=band8_61_c_r) 
+
+tm_band8_61 <- tm_shape(band8_61_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2061", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_61, "2061_July.png") # Save map as png.
+```
+
+# 2062
+
+```{r}
+netcdf_data_62 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_206112-206211.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206112-206211.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206112-206211_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_62 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_206112-206211_rotated.tif"), band = 8) 
+proj4string(band8_62) <- CRS(ukgrid) 
+band8_62_c <- crop(band8_62, UK) 
+band8_62_c_r <- rasterize(UK, band8_62_c) 
+band8_62_final <- mask(x=band8_62_c, mask=band8_62_c_r) 
+
+tm_band8_62 <- tm_shape(band8_62_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2062", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_62, "2062_July.png") # Save map as png.
+```
+
+# 2063
+
+```{r}
+netcdf_data_63 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_206212-206311.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206212-206311.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206212-206311_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_63 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_206212-206311_rotated.tif"), band = 8) 
+proj4string(band8_63) <- CRS(ukgrid) 
+band8_63_c <- crop(band8_63, UK) 
+band8_63_c_r <- rasterize(UK, band8_63_c) 
+band8_63_final <- mask(x=band8_63_c, mask=band8_63_c_r) 
+
+tm_band8_63 <- tm_shape(band8_63_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2063", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_63, "2063_July.png") # Save map as png.
+```
+
+# 2064
+
+```{r}
+netcdf_data_64 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_206312-206411.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206312-206411.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206312-206411_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_64 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_206312-206411_rotated.tif"), band = 8) 
+proj4string(band8_64) <- CRS(ukgrid) 
+band8_64_c <- crop(band8_64, UK) 
+band8_64_c_r <- rasterize(UK, band8_64_c) 
+band8_64_final <- mask(x=band8_64_c, mask=band8_64_c_r) 
+
+tm_band8_64 <- tm_shape(band8_64_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2064", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_64, "2064_July.png") # Save map as png.
+```
+
+# 2065
+
+```{r}
+netcdf_data_65 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_206412-206511.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206412-206511.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206412-206511_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_65 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_206412-206511_rotated.tif"), band = 8) 
+proj4string(band8_65) <- CRS(ukgrid) 
+band8_65_c <- crop(band8_65, UK) 
+band8_65_c_r <- rasterize(UK, band8_65_c) 
+band8_65_final <- mask(x=band8_65_c, mask=band8_65_c_r) 
+
+tm_band8_65 <- tm_shape(band8_65_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2065", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_65, "2065_July.png") # Save map as png.
+```
+
+# 2066
+
+```{r}
+netcdf_data_66 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_206512-206611.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206512-206611.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206512-206611_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_66 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_206512-206611_rotated.tif"), band = 8) 
+proj4string(band8_66) <- CRS(ukgrid) 
+band8_66_c <- crop(band8_66, UK) 
+band8_66_c_r <- rasterize(UK, band8_66_c) 
+band8_66_final <- mask(x=band8_66_c, mask=band8_66_c_r) 
+
+tm_band8_66 <- tm_shape(band8_66_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2066", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_66, "2066_July.png") # Save map as png.
+```
+
+# 2067
+
+```{r}
+netcdf_data_67 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_206612-206711.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206612-206711.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206612-206711_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_67 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_206612-206711_rotated.tif"), band = 8) 
+proj4string(band8_67) <- CRS(ukgrid) 
+band8_67_c <- crop(band8_67, UK) 
+band8_67_c_r <- rasterize(UK, band8_67_c) 
+band8_67_final <- mask(x=band8_67_c, mask=band8_67_c_r) 
+
+tm_band8_67 <- tm_shape(band8_67_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2067", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_67, "2067_July.png") # Save map as png.
+```
+
+# 2068
+
+```{r}
+netcdf_data_68 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_206712-206811.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206712-206811.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206712-206811_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_68 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_206712-206811_rotated.tif"), band = 8) 
+proj4string(band8_68) <- CRS(ukgrid) 
+band8_68_c <- crop(band8_67, UK) 
+band8_68_c_r <- rasterize(UK, band8_68_c) 
+band8_68_final <- mask(x=band8_68_c, mask=band8_68_c_r) 
+
+tm_band8_68 <- tm_shape(band8_68_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2068", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_68, "2068_July.png") # Save map as png.
+```
+
+# 2069
+
+```{r}
+netcdf_data_69 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_206812-206911.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206812-206911.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206812-206911_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_69 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_206812-206911_rotated.tif"), band = 8) 
+proj4string(band8_69) <- CRS(ukgrid) 
+band8_69_c <- crop(band8_69, UK) 
+band8_69_c_r <- rasterize(UK, band8_69_c) 
+band8_69_final <- mask(x=band8_69_c, mask=band8_69_c_r) 
+
+tm_band8_69 <- tm_shape(band8_69_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2069", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_69, "2069_July.png") # Save map as png.
+```
+
+# 2070
+
+```{r}
+netcdf_data_70 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_206912-207011.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206912-207011.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_206912-207011_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_70 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_206912-207011_rotated.tif"), band = 8) 
+proj4string(band8_70) <- CRS(ukgrid) 
+band8_70_c <- crop(band8_70, UK) 
+band8_70_c_r <- rasterize(UK, band8_70_c) 
+band8_70_final <- mask(x=band8_70_c, mask=band8_70_c_r) 
+
+tm_band8_70 <- tm_shape(band8_70_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2070", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_70, "2070_July.png") # Save map as png.
+```
+
+# 2071
+
+```{r}
+netcdf_data_71 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_207012-207111.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207012-207111.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207012-207111_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_71 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_207012-207111_rotated.tif"), band = 8) 
+proj4string(band8_71) <- CRS(ukgrid) 
+band8_71_c <- crop(band8_71, UK) 
+band8_71_c_r <- rasterize(UK, band8_71_c) 
+band8_71_final <- mask(x=band8_71_c, mask=band8_71_c_r) 
+
+tm_band8_71 <- tm_shape(band8_71_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2071", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_71, "2071_July.png") # Save map as png.
+```
+
+# 2072
+
+```{r}
+netcdf_data_72 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_207112-207211.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207112-207211.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207112-207211_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_72 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_207112-207211_rotated.tif"), band = 8) 
+proj4string(band8_72) <- CRS(ukgrid) 
+band8_72_c <- crop(band8_72, UK) 
+band8_72_c_r <- rasterize(UK, band8_72_c) 
+band8_72_final <- mask(x=band8_72_c, mask=band8_72_c_r) 
+
+tm_band8_72 <- tm_shape(band8_72_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2072", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_72, "2072_July.png") # Save map as png.
+```
+
+# 2073
+
+```{r}
+netcdf_data_73 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_207212-207311.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207212-207311.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207212-207311_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_73 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_207212-207311_rotated.tif"), band = 8) 
+proj4string(band8_73) <- CRS(ukgrid) 
+band8_73_c <- crop(band8_73, UK) 
+band8_73_c_r <- rasterize(UK, band8_73_c) 
+band8_73_final <- mask(x=band8_73_c, mask=band8_73_c_r) 
+
+tm_band8_73 <- tm_shape(band8_73_final)+
+        tm_raster(title = "°C",
+                  breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+                  palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+        tm_shape(UK)+
+                tm_borders(col = "grey40", 
+                           lwd = 0.5, 
+                           lty = "solid", 
+                           alpha = NA)+
+        tm_layout(title = "2073", 
+                  title.position = c('LEFT', 'TOP'),
+                  title.size = 0.5,
+                  title.snap.to.legend = TRUE,
+                  title.fontface = "bold",
+                  frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_73, "2073_July.png") # Save map as png.
+```
+# 2074
+
+```{r}
+netcdf_data_74 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_207312-207411.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207312-207411.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207312-207411_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_74 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_207312-207411_rotated.tif"), band = 8) 
+proj4string(band8_74) <- CRS(ukgrid) 
+band8_74_c <- crop(band8_74, UK) 
+band8_74_c_r <- rasterize(UK, band8_74_c) 
+band8_74_final <- mask(x=band8_74_c, mask=band8_74_c_r) 
+
+tm_band8_74 <- tm_shape(band8_74_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2074", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_74, "2074_July.png") # Save map as png.
+```
+
+# 2075
+
+```{r}
+netcdf_data_75 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_207412-207511.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207412-207511.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207412-207511_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_75 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_207412-207511_rotated.tif"), band = 8) 
+proj4string(band8_75) <- CRS(ukgrid) 
+band8_75_c <- crop(band8_75, UK) 
+band8_75_c_r <- rasterize(UK, band8_75_c) 
+band8_75_final <- mask(x=band8_75_c, mask=band8_75_c_r) 
+
+tm_band8_75 <- tm_shape(band8_75_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2075", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_75, "2075_July.png") # Save map as png.
+```
+
+# 2076
+
+```{r}
+netcdf_data_76 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_207512-207611.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207512-207611.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207512-207611_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_76 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_207512-207611_rotated.tif"), band = 8) 
+proj4string(band8_76) <- CRS(ukgrid) 
+band8_76_c <- crop(band8_76, UK) 
+band8_76_c_r <- rasterize(UK, band8_76_c) 
+band8_76_final <- mask(x=band8_76_c, mask=band8_76_c_r) 
+
+tm_band8_76 <- tm_shape(band8_76_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2076", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_76, "2076_July.png") # Save map as png.
+```
+
+# 2077
+
+```{r}
+netcdf_data_77 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_207612-207711.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207612-207711.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207612-207711_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_77 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_207612-207711_rotated.tif"), band = 8) 
+proj4string(band8_77) <- CRS(ukgrid) 
+band8_77_c <- crop(band8_76, UK) 
+band8_77_c_r <- rasterize(UK, band8_77_c) 
+band8_77_final <- mask(x=band8_77_c, mask=band8_77_c_r) 
+
+tm_band8_77 <- tm_shape(band8_77_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2077", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_77, "2077_July.png") # Save map as png.
+```
+
+
+# 2078
+
+```{r}
+netcdf_data_78 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_207712-207811.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207712-207811.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207712-207811_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_78 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_207712-207811_rotated.tif"), band = 8) 
+proj4string(band8_78) <- CRS(ukgrid) 
+band8_78_c <- crop(band8_78, UK) 
+band8_78_c_r <- rasterize(UK, band8_78_c) 
+band8_78_final <- mask(x=band8_78_c, mask=band8_78_c_r) 
+
+tm_band8_78 <- tm_shape(band8_78_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2078", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_78, "2078_July.png") # Save map as png.
+```
+
+
+# 2079
+
+```{r}
+netcdf_data_79 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_207812-207911.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207812-207911.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207812-207911_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_79 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_207812-207911_rotated.tif"), band = 8) 
+proj4string(band8_79) <- CRS(ukgrid) 
+band8_79_c <- crop(band8_79, UK) 
+band8_79_c_r <- rasterize(UK, band8_79_c) 
+band8_79_final <- mask(x=band8_79_c, mask=band8_79_c_r) 
+
+tm_band8_79 <- tm_shape(band8_79_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2079", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_79, "2079_July.png") # Save map as png.
+```
+
+
+# 2080
+
+```{r}
+netcdf_data_80 <- nc_open("tas_rcp85_land-cpm_uk_2.2km_01_mon_207912-208011.nc")
+
+gdal_utils(util = "warp", 
+           source = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207912-208011.nc", 
+           destination = "tas_rcp85_land-cpm_uk_2.2km_01_mon_207912-208011_rotated.tif",
+           options = c("-tr", "2200",  "2200", "-t_srs", "EPSG:27700", "-r", "near", "-overwrite"))
+
+band8_80 <- raster(paste0("tas_rcp85_land-cpm_uk_2.2km_01_mon_207912-208011_rotated.tif"), band = 8) 
+proj4string(band8_80) <- CRS(ukgrid) 
+band8_80_c <- crop(band8_80, UK) 
+band8_80_c_r <- rasterize(UK, band8_80_c) 
+band8_80_final <- mask(x=band8_80_c, mask=band8_80_c_r) 
+
+tm_band8_80 <- tm_shape(band8_80_final)+
+  tm_raster(title = "°C",
+            breaks = c(4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28), 
+            palette= rev(get_brewer_pal("RdBu", n = 12, plot=FALSE)))+
+  tm_shape(UK)+
+  tm_borders(col = "grey40", 
+             lwd = 0.5, 
+             lty = "solid", 
+             alpha = NA)+
+  tm_layout(title = "2080", 
+            title.position = c('LEFT', 'TOP'),
+            title.size = 0.5,
+            title.snap.to.legend = TRUE,
+            title.fontface = "bold",
+            frame = FALSE)+
+  tm_legend(show=FALSE)
+
+tmap_save(tm_band8_80, "2080_July.png") # Save map as png.
+```
+
+# Create gif of images
+
+```{r}
+list.files(pattern = '*.png') %>% # Select only .png files in the folder
+  image_read() %>%
+  image_join() %>%
+  magick::image_animate(fps = 1, loop = 10) %>%
+  image_write("final_1980-86.gif")
+```
+
+# Create an image with grid across years
+
+```{r}
+tiff("Grid_MeanTemperature.tiff", width = 3000, height = 3000, res=500)
+current.mode <- tmap_mode("plot")
+tmap_arrange(tm_band8_81, tm_band8_82, tm_band8_83, tm_band8_84, tm_band8_85, tm_band8_86, tm_band8_87, tm_band8_88, tm_band8_89, tm_band8_90,
+             tm_band8_91, tm_band8_92, tm_band8_93, tm_band8_94, tm_band8_95, tm_band8_96, tm_band8_97, tm_band8_98, tm_band8_99, tm_band8_00,
+             tm_band8_21, tm_band8_22, tm_band8_23, tm_band8_24, tm_band8_25, tm_band8_26, tm_band8_27, tm_band8_28, tm_band8_29, tm_band8_30,
+             tm_band8_31, tm_band8_32, tm_band8_33, tm_band8_34, tm_band8_35, tm_band8_36, tm_band8_37, tm_band8_38, tm_band8_39, tm_band8_40,
+             tm_band8_61, tm_band8_62, tm_band8_63, tm_band8_64, tm_band8_65, tm_band8_66, tm_band8_67, tm_band8_68, tm_band8_69, tm_band8_70,
+             tm_band8_71, tm_band8_72, tm_band8_73, tm_band8_74, tm_band8_75, tm_band8_76, tm_band8_77, tm_band8_78, tm_band8_79, tm_band8_80)
+tmap_mode(current.mode)
+dev.off()
+```
